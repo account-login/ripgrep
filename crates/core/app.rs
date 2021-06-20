@@ -556,6 +556,7 @@ pub fn all_args_and_flags() -> Vec<RGArg> {
     flag_block_buffered(&mut args);
     flag_byte_offset(&mut args);
     flag_case_sensitive(&mut args);
+    flag_cygwin_path(&mut args);
     flag_color(&mut args);
     flag_colors(&mut args);
     flag_column(&mut args);
@@ -902,6 +903,20 @@ This overrides the -i/--ignore-case and -S/--smart-case flags.
         .long_help(LONG)
         .overrides("ignore-case")
         .overrides("smart-case");
+    args.push(arg);
+}
+
+fn flag_cygwin_path(args: &mut Vec<RGArg>) {
+    const SHORT: &str = "Translate from cygwin path.";
+    const LONG: &str = long!(
+        "\
+This flag allows the use of posix paths. The paths in command line will be
+translated into windows paths by the `cygpath` command.
+"
+    );
+    let arg = RGArg::switch("cygwin-path")
+        .help(SHORT)
+        .long_help(LONG);
     args.push(arg);
 }
 

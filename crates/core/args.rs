@@ -557,6 +557,35 @@ impl ArgMatches {
         } else {
             false
         };
+        // cygwin path translation
+        if cfg!(target_os = "windows") && self.is_present("cygwin-path") {
+            use std::process::Command;
+            let mut cmd = Command::new("cygpath");
+            cmd.arg("-w");
+            for p in paths.iter() {
+                cmd.arg(p);
+            }
+            let out = cmd.output()?;
+            match out.status.code() {
+                Some(code) => if code != 0 {
+                    return Err(From::from(format!("cygpath existed with {}", code)));
+                },
+                None => return Err(From::from(format!("cygpath existed with signal"))),
+            };
+            // XXX: this will explode when path contains \n
+            let mut new_paths: Vec<PathBuf> = Vec::new();
+            for slice in out.stdout.split(|&ch| ch == b'\n') {
+                if slice.len() == 0 {
+                    continue;
+                }
+                let s = String::from_utf8(slice.to_vec())?;
+                new_paths.push(PathBuf::from(s));
+            }
+            if new_paths.len() != paths.len() {
+                return Err(From::from(format!("cygpath return {} paths from {} inputs", new_paths.len(), paths.len())));
+            }
+            paths = new_paths;
+        }
         Ok(Args(Arc::new(ArgsImp {
             matches: self,
             patterns,
